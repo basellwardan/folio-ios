@@ -1,0 +1,123 @@
+name: Build iOS
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    paths-ignore: ["**.md", "docs/**"]
+  workflow_dispatch:
+    inputs:
+      screenshots:
+        description: "Run tests and capture simulator screenshots"
+        type: boolean
+        default: true
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      # ---------- Device build → unsigned IPA ----------
+      - name: Archive (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project Folio.xcodeproj \
+            -scheme Folio \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Folio.xcarchive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            -quiet
+
+      - name: Package IPA
+        run: |
+          mkdir -p dist/Payload
+          cp -R build/Folio.xcarchive/Products/Applications/Folio.app dist/Payload/
+          cd dist && zip -qry Folio.ipa Payload && rm -rf Payload
+          ls -lh Folio.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Folio-ipa
+          path: dist/Folio.ipa
+          retention-days: 30
+
+      - name: Attach IPA to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Folio.ipa
+
+      # ---------- Simulator: tests + screenshots ----------
+      - name: Pick simulator
+        if: github.event_name != 'workflow_dispatch' || inputs.screenshots
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          d = json.load(sys.stdin)["devices"]
+          c = sorted([(rt, x) for rt, xs in d.items() if "iOS" in rt for x in xs if x["name"].startswith("iPhone")], key=lambda t: t[0])
+          pro = [x for _, x in c if "Pro" in x["name"] and "Max" not in x["name"]]
+          pick = (pro or [x for _, x in c])[-1]
+          print(pick["udid"])
+          ')
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl list devices | grep "$UDID"
+
+      - name: Unit tests
+        if: steps.sim.outputs.udid != ''
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project Folio.xcodeproj \
+            -scheme Folio \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build/sim \
+            -quiet
+
+      - name: Screenshots
+        if: steps.sim.outputs.udid != ''
+        run: |
+          UDID=${{ steps.sim.outputs.udid }}
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl ui "$UDID" appearance dark
+          xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 || true
+          APP=build/sim/Build/Products/Debug-iphonesimulator/Folio.app
+          xcrun simctl install "$UDID" "$APP"
+          mkdir -p shots
+          for s in home fan person document flipped expiring add; do
+            xcrun simctl terminate "$UDID" app.folio.vault || true
+            xcrun simctl launch "$UDID" app.folio.vault -demoData YES -screen "$s"
+            sleep 7
+            xcrun simctl io "$UDID" screenshot "shots/$s.png"
+          done
+          ls -lh shots
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.sim.outputs.udid != ''
+        with:
+          name: screenshots
+          path: shots
+          retention-days: 14
