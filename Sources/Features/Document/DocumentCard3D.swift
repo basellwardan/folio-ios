@@ -138,7 +138,7 @@ struct DocumentCard3D: View {
         VStack(alignment: alignment, spacing: 2) {
             Text(label)
                 .font(.system(size: 9, weight: .semibold))
-                .kerning(1)
+                .kerning(Localizer.shared.isArabic ? 0 : 1)
                 .foregroundStyle(Theme.textTertiary)
             Text(value)
                 .font(.system(size: 13, weight: .medium, design: .monospaced))

@@ -36,7 +36,7 @@ struct PersonEditorView: View {
 
                         VStack(alignment: .leading, spacing: 10) {
                             Text(tr("NAME"))
-                                .font(.system(size: 12, weight: .semibold)).kerning(1.2)
+                                .font(.system(size: 12, weight: .semibold)).kerning(Localizer.shared.isArabic ? 0 : 1.2)
                                 .foregroundStyle(Theme.textSecondary)
                             TextField(tr("Full name"), text: $name)
                                 .font(.system(size: 20))
@@ -50,7 +50,7 @@ struct PersonEditorView: View {
 
                         VStack(alignment: .leading, spacing: 10) {
                             Text(tr("COLOR"))
-                                .font(.system(size: 12, weight: .semibold)).kerning(1.2)
+                                .font(.system(size: 12, weight: .semibold)).kerning(Localizer.shared.isArabic ? 0 : 1.2)
                                 .foregroundStyle(Theme.textSecondary)
                             GlassEffectContainer(spacing: 10) {
                                 HStack(spacing: 10) {

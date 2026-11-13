@@ -139,7 +139,7 @@ struct GlassSection<Content: View>: View {
             if let title {
                 Text(title.uppercased())
                     .font(.system(size: 12, weight: .semibold))
-                    .kerning(1.2)
+                    .kerning(Localizer.shared.isArabic ? 0 : 1.2)
                     .foregroundStyle(Theme.textSecondary)
             }
             content
