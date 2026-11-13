@@ -80,7 +80,7 @@ final class LocalizationTests: XCTestCase {
     /// Every Arabic translation must use the same placeholders as its English key,
     /// otherwise String(format:) would crash or drop values.
     func testArabicPlaceholdersMatch() {
-        let pattern = try! NSRegularExpression(pattern: "%(\d\$)?@")
+        let pattern = try! NSRegularExpression(pattern: #"%(\d\$)?@"#)
         func count(_ s: String) -> Int {
             pattern.numberOfMatches(in: s, range: NSRange(s.startIndex..., in: s))
         }
