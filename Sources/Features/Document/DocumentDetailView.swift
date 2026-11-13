@@ -265,23 +265,25 @@ struct ScanThumbnail: View {
     @State private var image: UIImage?
 
     var body: some View {
-        ZStack {
-            if let image {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                VStack(spacing: 6) {
-                    Image(systemName: imageID == nil ? "plus.viewfinder" : "photo")
-                        .font(.system(size: 22, weight: .light))
-                    Text(imageID == nil ? "Add \(title.lowercased())" : title)
-                        .font(.system(size: 12, weight: .medium))
+        // Fixed-size base; the scan is an overlay so it fills and crops instead of resizing the tile.
+        Color.white.opacity(0.03)
+            .frame(maxWidth: .infinity)
+            .frame(height: 96)
+            .overlay {
+                if let image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    VStack(spacing: 6) {
+                        Image(systemName: imageID == nil ? "plus.viewfinder" : "photo")
+                            .font(.system(size: 22, weight: .light))
+                        Text(imageID == nil ? "Add \(title.lowercased())" : title)
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundStyle(Theme.textSecondary)
                 }
-                .foregroundStyle(Theme.textSecondary)
             }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 96)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Theme.hairline))
         .overlay(alignment: .bottomLeading) {

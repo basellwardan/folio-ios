@@ -9,7 +9,10 @@ struct HomeView: View {
     @State private var path = NavigationPath()
     @State private var focusedID: UUID?
     @State private var sheet: HomeSheet?
+    /// The folder that is currently swung open (while its person screen is showing).
+    @State private var openedID: UUID?
     @Namespace private var zoom
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var focusedPerson: Person? {
         people.first { $0.uid == focusedID } ?? (focusedID == FolderFanView.addID ? nil : people.first)
@@ -43,7 +46,7 @@ struct HomeView: View {
             .toolbarVisibility(.hidden, for: .navigationBar)
             .navigationDestination(for: Person.self) { person in
                 PersonDetailView(person: person, namespace: zoom)
-                    .navigationTransition(.zoom(sourceID: person.uid, in: zoom))
+                    .navigationTransition(.zoom(sourceID: FolderFanView.openSourceID, in: zoom))
             }
             .navigationDestination(for: VaultDocument.self) { document in
                 DocumentDetailView(document: document)
@@ -78,6 +81,14 @@ struct HomeView: View {
         .onChange(of: people.count) { _, _ in
             if focusedPerson == nil && focusedID != FolderFanView.addID { focusedID = people.first?.uid }
         }
+        .onChange(of: path.count) { _, count in
+            // Back on the home screen: the page has shrunk into the folder, now close the flap.
+            guard count == 0, openedID != nil else { return }
+            Task {
+                try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 220))
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.78)) { openedID = nil }
+            }
+        }
         .task { await runDemoScreen() }
     }
 
@@ -87,32 +98,10 @@ struct HomeView: View {
         HStack(alignment: .center) {
             LogoMark(size: 54)
             Spacer()
-            GlassEffectContainer(spacing: 0) {
-                HStack(spacing: -8) {
-                    ForEach(people.prefix(3)) { person in
-                        Button {
-                            withAnimation(Motion.snappy) { focusedID = person.uid }
-                        } label: {
-                            AvatarBubble(initials: person.initials, color: person.color, size: 46,
-                                         isSelected: focusedID == person.uid)
-                        }
-                        .buttonStyle(PressScaleStyle(scale: 0.9))
-                        .glassEffect(
-                            Glass.regular
-                                .tint(focusedID == person.uid ? Theme.accent : Color.white.opacity(0.06))
-                                .interactive(),
-                            in: .circle
-                        )
-                        .overlay(Circle().stroke(Color.white.opacity(0.14), lineWidth: 0.8).allowsHitTesting(false))
-                    }
-                }
-                .animation(Motion.snappy, value: focusedID)
-            }
             GlassCircleButton(systemImage: "bell", size: 50, badge: attentionCount) {
                 sheet = .expiring
             }
             .matchedTransitionSource(id: "bell", in: zoom)
-            .padding(.leading, 6)
         }
     }
 
@@ -151,15 +140,19 @@ struct HomeView: View {
             FolderFanView(
                 people: people,
                 focusedID: $focusedID,
+                openedID: openedID,
                 namespace: zoom,
-                onOpen: { path.append($0) },
+                onOpen: { open($0) },
                 onAdd: { sheet = .addPerson }
             )
             .padding(.top, 84)
 
             if let person = focusedPerson {
-                FocusCard(person: person) { path.append(person) }
+                FocusCard(person: person) { open(person) }
                     .padding(.leading, 20)
+                    .opacity(openedID == nil ? 1 : 0)
+                    .scaleEffect(openedID == nil ? 1 : 0.9, anchor: .topLeading)
+                    .blur(radius: openedID == nil ? 0 : 6)
                     .transition(.scale(scale: 0.85, anchor: .topLeading).combined(with: .opacity))
             } else if people.isEmpty {
                 EmptyFocusCard { sheet = .addPerson }
@@ -167,6 +160,21 @@ struct HomeView: View {
             }
         }
         .animation(Motion.snappy, value: focusedPerson?.uid)
+        .animation(Motion.snappy, value: openedID)
+    }
+
+    /// Swings the folder open (flap folds toward you, documents rise out),
+    /// then the person's page zooms out of it.
+    private func open(_ person: Person) {
+        guard openedID == nil, path.isEmpty else { return }
+        if focusedID != person.uid {
+            withAnimation(Motion.snappy) { focusedID = person.uid }
+        }
+        withAnimation(.spring(response: 0.46, dampingFraction: 0.66)) { openedID = person.uid }
+        Task {
+            try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 420))
+            path.append(person)
+        }
     }
 
     // MARK: Demo routing for CI screenshots
@@ -178,8 +186,19 @@ struct HomeView: View {
         switch screen {
         case "fan":
             withAnimation(Motion.snappy) { focusedID = people.count > 2 ? people[2].uid : second?.uid }
+        case "open":
+            // Freeze the folder in its open pose for the screenshot.
+            if let second {
+                withAnimation(Motion.snappy) { focusedID = second.uid }
+                try? await Task.sleep(for: .milliseconds(500))
+                withAnimation(.spring(response: 0.46, dampingFraction: 0.66)) { openedID = second.uid }
+            }
         case "person":
-            if let second { path.append(second) }
+            if let second {
+                withAnimation(Motion.snappy) { focusedID = second.uid }
+                try? await Task.sleep(for: .milliseconds(500))
+                open(second)
+            }
         case "document", "flipped":
             if let second {
                 path.append(second)
@@ -219,40 +238,43 @@ struct FocusCard: View {
 
     var body: some View {
         Button(action: onOpen) {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 3) {
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(person.name)
-                            .font(.system(size: 19, weight: .medium))
+                            .font(.system(size: 15, weight: .medium))
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
                         Text(subtitle)
-                            .font(.system(size: 12))
+                            .font(.system(size: 11))
                             .foregroundStyle(Theme.textSecondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
-                    Spacer(minLength: 8)
+                    Spacer(minLength: 6)
                     Image(systemName: "arrow.up.right")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Theme.textSecondary)
-                        .padding(.top, 4)
+                        .padding(.top, 3)
                 }
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
                     Text(person.validPercent.map { "\($0)" } ?? "—")
-                        .font(.system(size: 40, weight: .thin))
+                        .font(.system(size: 28, weight: .thin))
                         .contentTransition(.numericText())
-                    Text(person.validPercent == nil ? "" : "%  valid")
-                        .font(.system(size: 13, weight: .light))
+                    Text(person.validPercent == nil ? "" : "% valid")
+                        .font(.system(size: 11, weight: .light))
                         .foregroundStyle(Theme.textSecondary)
                 }
-                .padding(.top, 6)
+                .padding(.top, 2)
             }
             .foregroundStyle(.white)
-            .padding(18)
-            .frame(width: 214, alignment: .leading)
-            .contentShape(RoundedRectangle(cornerRadius: 26))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(width: 158, alignment: .leading)
+            .contentShape(RoundedRectangle(cornerRadius: 20))
         }
         .buttonStyle(PressScaleStyle(scale: 0.97))
-        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 26))
+        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 20))
         .id(person.uid)
     }
 
@@ -260,7 +282,7 @@ struct FocusCard: View {
         let n = person.documents.count
         let docs = n == 1 ? "1 document" : "\(n) documents"
         let attention = person.attentionCount
-        return attention > 0 ? "\(docs) · \(attention) need attention" : docs
+        return attention > 0 ? "\(docs) · \(attention) due" : docs
     }
 }
 

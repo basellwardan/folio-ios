@@ -8,20 +8,42 @@ struct Folder3DView: View {
     let symbols: [String]
     var isFocused: Bool
     var size = CGSize(width: 150, height: 200)
+    /// 0 = closed, 1 = open (flap folded toward the viewer, documents lifted out).
+    var openAmount: CGFloat = 0
 
     var body: some View {
+        let o = openAmount
+        let flap = RoundedRectangle(cornerRadius: 20, style: .continuous)
         ZStack(alignment: .bottom) {
             back
+                .overlay {
+                    // the inside of the folder darkens as it opens
+                    FolderBackShape()
+                        .fill(Color.black.opacity(0.28 * o))
+                        .allowsHitTesting(false)
+                }
             papers
                 .padding(.horizontal, 12)
                 .padding(.bottom, size.height * 0.30)
+                .offset(y: -size.height * 0.34 * o)
+                .scaleEffect(1 + 0.06 * o, anchor: .bottom)
             front
                 .frame(height: size.height * 0.64)
+                .overlay {
+                    // light catches the flap as it tips toward you
+                    flap.fill(LinearGradient(colors: [.white.opacity(0.32 * o), .black.opacity(0.22 * o)],
+                                             startPoint: .top, endPoint: .bottom))
+                        .allowsHitTesting(false)
+                }
+                .rotation3DEffect(.degrees(-62 * o), axis: (x: 1, y: 0, z: 0),
+                                  anchor: .bottom, perspective: 0.42)
         }
         .frame(width: size.width, height: size.height)
         .compositingGroup()
-        .shadow(color: isFocused ? Theme.accent.opacity(0.45) : .black.opacity(0.6),
-                radius: isFocused ? 26 : 14, x: 0, y: isFocused ? 10 : 12)
+        .shadow(color: isFocused ? Theme.accent.opacity(0.45 + 0.25 * o) : .black.opacity(0.6),
+                radius: isFocused ? 26 + 18 * o : 14, x: 0, y: isFocused ? 10 + 10 * o : 12)
+        .scaleEffect(1 + 0.1 * o)
+        .offset(y: -12 * o)
         .animation(Motion.snappy, value: isFocused)
     }
 
@@ -38,13 +60,14 @@ struct Folder3DView: View {
     }
 
     private var papers: some View {
-        ZStack {
-            paper(opacity: 0.55, symbol: symbols.dropFirst().first)
-                .rotationEffect(.degrees(-4))
-                .offset(x: -6, y: 8)
+        let o = openAmount
+        return ZStack {
+            paper(opacity: 0.55 + 0.3 * o, symbol: symbols.dropFirst().first)
+                .rotationEffect(.degrees(-4 - 8 * o))
+                .offset(x: -6 - 16 * o, y: 8 - 4 * o)
             paper(opacity: 0.92, symbol: symbols.first)
-                .rotationEffect(.degrees(3))
-                .offset(x: 6)
+                .rotationEffect(.degrees(3 + 6 * o))
+                .offset(x: 6 + 12 * o, y: -10 * o)
         }
         .frame(height: size.height * 0.6)
     }

@@ -107,7 +107,7 @@ jobs:
           APP=build/sim/Build/Products/Debug-iphonesimulator/Folio.app
           xcrun simctl install "$UDID" "$APP"
           mkdir -p shots
-          for s in home fan person document flipped expiring add; do
+          for s in home fan open person document flipped expiring add; do
             xcrun simctl terminate "$UDID" app.folio.vault || true
             xcrun simctl launch "$UDID" app.folio.vault -demoData YES -screen "$s"
             sleep 7

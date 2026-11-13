@@ -9,6 +9,8 @@ struct PersonDetailView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var appeared = false
+    @State private var dealt = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showAddDocument = false
     @State private var showEditPerson = false
     @State private var confirmDelete = false
@@ -38,13 +40,7 @@ struct PersonDetailView: View {
                                 .matchedTransitionSource(id: doc.uid, in: namespace) { config in
                                     config.clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                                 }
-                                .scrollTransition(.interactive, axis: .vertical) { content, phase in
-                                    content
-                                        .rotation3DEffect(.degrees(phase.value * -28), axis: (x: 1, y: 0, z: 0), perspective: 0.6)
-                                        .scaleEffect(1 - abs(phase.value) * 0.1)
-                                        .opacity(1 - abs(phase.value) * 0.35)
-                                }
-                                .depthEntrance(index: index + 2, appeared: appeared)
+                                .modifier(DealEntrance(index: index, shown: dealt))
                             }
                         }
                     }
@@ -86,6 +82,12 @@ struct PersonDetailView: View {
         .onAppear {
             if !appeared {
                 withAnimation { appeared = true }
+            }
+            guard !dealt else { return }
+            // Deal the cards once the zoom out of the folder has settled, so nothing moves mid-transition.
+            Task {
+                try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 320))
+                dealt = true
             }
         }
     }
@@ -164,7 +166,33 @@ struct PersonDetailView: View {
         .padding(.top, 20)
     }
 
-    private func deletePerson() {
+}
+
+/// Cards slide down out of the opened folder one after another, tipping flat as they land.
+/// Every card ends exactly flat, so there is no snap afterwards.
+private struct DealEntrance: ViewModifier {
+    let index: Int
+    let shown: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .scaleEffect(shown || reduceMotion ? 1 : 0.78, anchor: .top)
+            .rotation3DEffect(.degrees(shown || reduceMotion ? 0 : 48), axis: (x: 1, y: 0, z: 0),
+                              anchor: .top, perspective: 0.5)
+            .offset(y: shown || reduceMotion ? 0 : -90)
+            .animation(
+                reduceMotion
+                    ? .easeOut(duration: 0.2)
+                    : .spring(response: 0.58, dampingFraction: 0.8).delay(Double(min(index, 6)) * 0.07),
+                value: shown
+            )
+    }
+}
+
+private extension PersonDetailView {
+    func deletePerson() {
         let target = person
         let context = context
         // Leave the screen first so no view reads the model after it is deleted.

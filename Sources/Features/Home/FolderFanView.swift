@@ -6,12 +6,16 @@ import SwiftUI
 struct FolderFanView: View {
     let people: [Person]
     @Binding var focusedID: UUID?
+    var openedID: UUID? = nil
     let namespace: Namespace.ID
     var onOpen: (Person) -> Void
     var onAdd: () -> Void
 
     static let addID = UUID(uuidString: "00000000-0000-0000-0000-0000000000AD")!
     static let folderSize = CGSize(width: 160, height: 214)
+    /// Zoom-transition source for the person page. It is an invisible rectangle fixed where the
+    /// centered folder rests, so the transition never snapshots (or clips) the moving 3D folder.
+    static let openSourceID = "open-folder"
 
     @State private var viewportWidth: CGFloat = 390
     @State private var appeared = false
@@ -22,6 +26,11 @@ struct FolderFanView: View {
         return people.firstIndex { $0.uid == focusedID } ?? 0
     }
 
+    private var openIndex: Int? {
+        guard let openedID else { return nil }
+        return people.firstIndex { $0.uid == openedID }
+    }
+
     var body: some View {
         ScrollView(.horizontal) {
             LazyHStack(spacing: -46) {
@@ -29,12 +38,13 @@ struct FolderFanView: View {
                     FolderCell(
                         person: person,
                         isFocused: focusedID == person.uid,
-                        namespace: namespace,
+                        isOpen: openedID == person.uid,
                         onTap: { handleTap(person) },
                         onOpen: { onOpen(person) }
                     )
                     .depthEntrance(index: index, appeared: appeared)
-                    .zIndex(-Double(abs(index - focusedIndex)))
+                    .modifier(MakeRoom(index: index, openIndex: openIndex))
+                    .zIndex(openedID == person.uid ? 10 : -Double(abs(index - focusedIndex)))
                     .id(person.uid)
                 }
 
@@ -42,6 +52,7 @@ struct FolderFanView: View {
                     .buttonStyle(PressScaleStyle())
                     .coverFlow(reduceMotion: reduceMotion)
                     .depthEntrance(index: people.count, appeared: appeared)
+                    .modifier(MakeRoom(index: people.count, openIndex: openIndex))
                     .zIndex(-Double(abs(people.count - focusedIndex)))
                     .id(Self.addID)
             }
@@ -50,10 +61,19 @@ struct FolderFanView: View {
         }
         .scrollIndicators(.hidden)
         .scrollClipDisabled()
+        .scrollDisabled(openedID != nil)
         .scrollTargetBehavior(.viewAligned)
         .scrollPosition(id: $focusedID, anchor: .center)
         .contentMargins(.horizontal, max(0, (viewportWidth - Self.folderSize.width) / 2), for: .scrollContent)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { viewportWidth = $0 }
+        .overlay {
+            Color.clear
+                .frame(width: Self.folderSize.width, height: Self.folderSize.height)
+                .matchedTransitionSource(id: Self.openSourceID, in: namespace) { config in
+                    config.clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                }
+                .allowsHitTesting(false)
+        }
         .sensoryFeedback(.selection, trigger: focusedID)
         .onAppear {
             guard !appeared else { return }
@@ -70,15 +90,34 @@ struct FolderFanView: View {
     }
 }
 
-/// One folder with its "jump toward the screen" keyframe animation.
+/// While a folder is open, its neighbours slide aside and dim so it has the stage.
+private struct MakeRoom: ViewModifier {
+    let index: Int
+    let openIndex: Int?
+
+    func body(content: Content) -> some View {
+        let push: CGFloat = {
+            guard let openIndex, index != openIndex else { return 0 }
+            return index < openIndex ? -54 : 54
+        }()
+        let dimmed = openIndex != nil && openIndex != index
+        content
+            .offset(x: push)
+            .opacity(dimmed ? 0.35 : 1)
+            .blur(radius: dimmed ? 2 : 0)
+            .animation(.spring(response: 0.5, dampingFraction: 0.8), value: openIndex)
+    }
+}
+
+/// One folder. Tapping the centered folder opens it: the flap folds toward you, the documents
+/// rise out and fan apart, then the person's page zooms out of the open folder.
 private struct FolderCell: View {
     let person: Person
     let isFocused: Bool
-    let namespace: Namespace.ID
+    let isOpen: Bool
     var onTap: () -> Void
     var onOpen: () -> Void
 
-    @State private var jumps = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -87,72 +126,25 @@ private struct FolderCell: View {
             count: person.documents.count,
             symbols: person.sortedDocuments.prefix(2).map(\.type.symbol),
             isFocused: isFocused,
-            size: FolderFanView.folderSize
+            size: FolderFanView.folderSize,
+            openAmount: isOpen && !reduceMotion ? 1 : 0
         )
-        .keyframeAnimator(initialValue: JumpValues(), trigger: jumps) { content, v in
-            content
-                .scaleEffect(v.scale)
-                .rotation3DEffect(.degrees(v.tiltX), axis: (x: 1, y: 0, z: 0), perspective: 0.45)
-                .rotationEffect(.degrees(v.spin))
-                .offset(y: v.lift)
-                .brightness(v.glow)
-        } keyframes: { _ in
-            KeyframeTrack(\.scale) {
-                CubicKeyframe(0.93, duration: 0.08)
-                SpringKeyframe(1.34, duration: 0.26, spring: .bouncy)
-                SpringKeyframe(1.0, duration: 0.5, spring: .smooth)
-            }
-            KeyframeTrack(\.lift) {
-                CubicKeyframe(8, duration: 0.08)
-                SpringKeyframe(-58, duration: 0.26, spring: .bouncy)
-                SpringKeyframe(0, duration: 0.5, spring: .smooth)
-            }
-            KeyframeTrack(\.tiltX) {
-                CubicKeyframe(6, duration: 0.08)
-                SpringKeyframe(-20, duration: 0.26)
-                SpringKeyframe(0, duration: 0.5, spring: .smooth)
-            }
-            KeyframeTrack(\.spin) {
-                CubicKeyframe(0, duration: 0.1)
-                CubicKeyframe(-3.5, duration: 0.12)
-                CubicKeyframe(2.5, duration: 0.14)
-                SpringKeyframe(0, duration: 0.35)
-            }
-            KeyframeTrack(\.glow) {
-                CubicKeyframe(0, duration: 0.08)
-                CubicKeyframe(0.12, duration: 0.2)
-                CubicKeyframe(0, duration: 0.4)
-            }
-        }
+        .animation(
+            isOpen ? .spring(response: 0.46, dampingFraction: 0.66) : .spring(response: 0.5, dampingFraction: 0.78),
+            value: isOpen
+        )
         .contentShape(Rectangle())
         .onTapGesture {
-            if isFocused {
-                jumps += 1
-                Task {
-                    try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 300))
-                    onOpen()
-                }
-            } else {
-                onTap()
-            }
+            if isFocused { onOpen() } else { onTap() }
         }
-        .sensoryFeedback(.impact(weight: .medium), trigger: jumps)
-        .matchedTransitionSource(id: person.uid, in: namespace) { config in
-            config.clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .sensoryFeedback(trigger: isOpen) { _, open -> SensoryFeedback? in
+            open ? SensoryFeedback.impact(weight: .medium) : SensoryFeedback.impact(flexibility: .soft)
         }
         .coverFlow(reduceMotion: reduceMotion)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(person.name), \(person.documents.count) documents")
         .accessibilityAddTraits(.isButton)
     }
-}
-
-private struct JumpValues {
-    var scale: CGFloat = 1
-    var lift: CGFloat = 0
-    var tiltX: Double = 0
-    var spin: Double = 0
-    var glow: Double = 0
 }
 
 private extension View {

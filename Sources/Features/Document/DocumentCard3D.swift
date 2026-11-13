@@ -14,12 +14,15 @@ struct DocumentCard3D: View {
     private let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
 
     var body: some View {
-        ZStack {
-            background
-            if side == .front { frontContent } else { backContent }
-        }
-        .aspectRatio(DocumentType.cardAspect, contentMode: .fit)
-        .clipShape(shape)
+        // The card's size comes only from the width it is offered and the ID-1 aspect ratio.
+        // Scans are layered on top as overlays, so a photo with a different shape can never
+        // make the card (and the whole page) wider than the screen.
+        Color.clear
+            .aspectRatio(DocumentType.cardAspect, contentMode: .fit)
+            .frame(maxWidth: .infinity)
+            .overlay { background }
+            .overlay { if side == .front { frontContent } else { backContent } }
+            .clipShape(shape)
         .overlay {
             shape.stroke(
                 LinearGradient(colors: [.white.opacity(0.7), .white.opacity(0.06), .white.opacity(0.25)],
@@ -45,10 +48,13 @@ struct DocumentCard3D: View {
             LinearGradient(colors: [tint.opacity(0.42), Color(white: 0.09), Color(white: 0.05)],
                            startPoint: .topLeading, endPoint: .bottomTrailing)
             if let image {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-                    .opacity(0.9)
+                Color.clear.overlay {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .opacity(0.9)
+                }
+                .clipped()
                 LinearGradient(colors: [.black.opacity(0.1), .black.opacity(0.75)],
                                startPoint: .top, endPoint: .bottom)
             } else {
