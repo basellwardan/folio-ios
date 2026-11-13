@@ -69,6 +69,11 @@ struct RootView: View {
                     .zIndex(3)
             }
         }
+        // Language: Arabic flips the layout to right-to-left. Changing the id rebuilds every
+        // screen so all translated text refreshes at once.
+        .environment(\.locale, Localizer.shared.locale)
+        .environment(\.layoutDirection, Localizer.shared.layoutDirection)
+        .id(Localizer.shared.isArabic)
         .animation(.smooth(duration: 0.5), value: lock.isLocked)
         .animation(.easeOut(duration: 0.2), value: scenePhase)
     }

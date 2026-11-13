@@ -16,6 +16,7 @@ struct DotGridBackground: View {
                 endRadius: 420
             )
             .animation(.smooth(duration: 0.8), value: glowCenter)
+            .animation(.smooth(duration: 0.6), value: glow)
             DotGrid()
                 .padding(-24)
                 .tiltParallax(-8)

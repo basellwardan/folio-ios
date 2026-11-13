@@ -20,9 +20,9 @@ struct KeyDatesPanel: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Key Dates")
+                    Text(tr("Key Dates"))
                         .font(.system(size: 24, weight: .regular))
-                    Text(person.map { "\($0.name) · renewals" } ?? "All renewals")
+                    Text(person.map { tr("%@ · renewals", $0.name) } ?? tr("All renewals"))
                         .font(.system(size: 13))
                         .foregroundStyle(Theme.textSecondary)
                 }
@@ -44,6 +44,7 @@ struct KeyDatesPanel: View {
             .animation(Motion.snappy, value: next?.uid)
 
             TimelineRuler(documents: scoped, highlighted: next?.uid)
+                .environment(\.layoutDirection, .leftToRight)
                 .frame(height: 96)
                 .padding(.top, 14)
         }
@@ -56,17 +57,17 @@ struct KeyDatesPanel: View {
     }
 
     private var countdown: String {
-        guard let days = next?.daysUntilExpiry else { return scoped.isEmpty ? "No documents yet" : "All clear" }
-        if days == 0 { return "Today" }
-        if days < 45 { return days == 1 ? "1 Day" : "\(days) Days" }
+        guard let days = next?.daysUntilExpiry else { return scoped.isEmpty ? tr("No documents yet") : tr("All clear") }
+        if days == 0 { return tr("Today") }
+        if days < 45 { return L10n.countdownDays(days) }
         let months = Int((Double(days) / 30.4).rounded())
-        if months < 24 { return "\(months) Months" }
-        return "\(Int((Double(days) / 365).rounded())) Years"
+        if months < 24 { return L10n.countdownMonths(months) }
+        return L10n.countdownYears(Int((Double(days) / 365).rounded()))
     }
 
     private var nextCaption: String {
         guard let next, let date = next.expiryDate else {
-            return scoped.isEmpty ? "Add a document to track its expiry" : "Nothing expires soon"
+            return scoped.isEmpty ? tr("Add a document to track its expiry") : tr("Nothing expires soon")
         }
         let who = person == nil ? (next.person?.firstName ?? "") + " · " : ""
         return "\(who)\(next.displayTitle) · \(date.shortFormatted)"
@@ -120,7 +121,7 @@ struct TimelineRuler: View {
                             p.addLine(to: CGPoint(x: x, y: baseline))
                             ctx.stroke(p, with: .color(.white.opacity(0.45)), lineWidth: 1.2)
                             if i % 2 == 0 {
-                                let label = Text(cursor.formatted(.dateTime.month(.abbreviated)))
+                                let label = Text(cursor.formatted(.dateTime.month(.abbreviated).locale(Localizer.shared.locale)))
                                     .font(.system(size: 10, weight: .medium))
                                     .foregroundStyle(Color.white.opacity(0.4))
                                 ctx.draw(label, at: CGPoint(x: x, y: baseline + 14))
@@ -145,7 +146,7 @@ struct TimelineRuler: View {
                     .fill(Theme.accent)
                     .frame(width: 1.5, height: 30)
                     .position(x: w * nowX, y: 46)
-                Text("We're here")
+                Text(tr("We're here"))
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.black)
                     .padding(.horizontal, 12)

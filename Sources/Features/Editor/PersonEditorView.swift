@@ -23,20 +23,22 @@ struct PersonEditorView: View {
                 ScrollView {
                     VStack(spacing: 26) {
                         Folder3DView(
-                            title: trimmed.isEmpty ? "Name" : (trimmed.split(separator: " ").first.map(String.init) ?? trimmed),
+                            title: trimmed.isEmpty ? tr("Name") : (trimmed.split(separator: " ").first.map(String.init) ?? trimmed),
                             count: person?.documents.count ?? 0,
                             symbols: [],
-                            isFocused: true
+                            isFocused: true,
+                            tint: Color(hex: colorHex)
                         )
+                        .environment(\.layoutDirection, .leftToRight)
                         .tiltRotation(10)
                         .padding(.top, 20)
                         .animation(Motion.bouncy, value: trimmed)
 
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("NAME")
+                            Text(tr("NAME"))
                                 .font(.system(size: 12, weight: .semibold)).kerning(1.2)
                                 .foregroundStyle(Theme.textSecondary)
-                            TextField("Full name", text: $name)
+                            TextField(tr("Full name"), text: $name)
                                 .font(.system(size: 20))
                                 .textContentType(.name)
                                 .submitLabel(.done)
@@ -47,7 +49,7 @@ struct PersonEditorView: View {
                         }
 
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("COLOR")
+                            Text(tr("COLOR"))
                                 .font(.system(size: 12, weight: .semibold)).kerning(1.2)
                                 .foregroundStyle(Theme.textSecondary)
                             GlassEffectContainer(spacing: 10) {
@@ -79,14 +81,14 @@ struct PersonEditorView: View {
                     .foregroundStyle(.white)
                 }
             }
-            .navigationTitle(person == nil ? "New person" : "Edit person")
+            .navigationTitle(person == nil ? tr("New person") : tr("Edit person"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", systemImage: "xmark") { dismiss() }
+                    Button(tr("Cancel"), systemImage: "xmark") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", systemImage: "checkmark") { save() }
+                    Button(tr("Save"), systemImage: "checkmark") { save() }
                         .disabled(trimmed.isEmpty)
                 }
             }

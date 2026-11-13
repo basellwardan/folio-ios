@@ -10,6 +10,12 @@ struct Folder3DView: View {
     var size = CGSize(width: 150, height: 200)
     /// 0 = closed, 1 = open (flap folded toward the viewer, documents lifted out).
     var openAmount: CGFloat = 0
+    /// The person's color. The selected folder is painted in it; the others carry a faint hint of it.
+    var tint: Color = Theme.accent
+
+    private var deep: Color { tint.mix(with: .black, by: 0.42) }
+    private var greyLight: Color { Color(white: 0.78).mix(with: tint, by: 0.14) }
+    private var greyDark: Color { Color(white: 0.42).mix(with: tint, by: 0.14) }
 
     var body: some View {
         let o = openAmount
@@ -40,11 +46,12 @@ struct Folder3DView: View {
         }
         .frame(width: size.width, height: size.height)
         .compositingGroup()
-        .shadow(color: isFocused ? Theme.accent.opacity(0.45 + 0.25 * o) : .black.opacity(0.6),
+        .shadow(color: isFocused ? tint.opacity(0.45 + 0.25 * o) : .black.opacity(0.6),
                 radius: isFocused ? 26 + 18 * o : 14, x: 0, y: isFocused ? 10 + 10 * o : 12)
         .scaleEffect(1 + 0.1 * o)
         .offset(y: -12 * o)
         .animation(Motion.snappy, value: isFocused)
+        .animation(.smooth(duration: 0.45), value: tint)
     }
 
     // MARK: Layers
@@ -53,8 +60,8 @@ struct Folder3DView: View {
         FolderBackShape()
             .fill(LinearGradient(
                 colors: isFocused
-                    ? [Theme.accent.opacity(0.85), Theme.accentDeep.opacity(0.9)]
-                    : [Color.white.opacity(0.42), Color.white.opacity(0.14)],
+                    ? [tint.opacity(0.85), deep.opacity(0.9)]
+                    : [greyLight.opacity(0.42), greyLight.opacity(0.14)],
                 startPoint: .top, endPoint: .bottom))
             .overlay(FolderBackShape().stroke(Color.white.opacity(isFocused ? 0.45 : 0.3), lineWidth: 0.8))
     }
@@ -101,8 +108,8 @@ struct Folder3DView: View {
         return shape
             .fill(LinearGradient(
                 colors: isFocused
-                    ? [Theme.accent.opacity(0.96), Theme.accentDeep.opacity(0.94)]
-                    : [Color(white: 0.78).opacity(0.86), Color(white: 0.42).opacity(0.82)],
+                    ? [tint.opacity(0.96), deep.opacity(0.94)]
+                    : [greyLight.opacity(0.86), greyDark.opacity(0.82)],
                 startPoint: .topLeading, endPoint: .bottomTrailing))
             // inner glow on the top edge (glass rim)
             .overlay(
@@ -182,7 +189,7 @@ struct AddFolderView: View {
                     .font(.system(size: 22, weight: .semibold))
                     .frame(width: 52, height: 52)
                     .glassEffect(.regular.tint(Theme.accent.opacity(0.35)), in: .circle)
-                Text("New person")
+                Text(tr("New person"))
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Theme.textSecondary)
             }

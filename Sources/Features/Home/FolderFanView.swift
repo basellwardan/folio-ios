@@ -74,6 +74,8 @@ struct FolderFanView: View {
                 }
                 .allowsHitTesting(false)
         }
+        // The 3D fan math is written for left-to-right; keep it that way in Arabic too.
+        .environment(\.layoutDirection, .leftToRight)
         .sensoryFeedback(.selection, trigger: focusedID)
         .onAppear {
             guard !appeared else { return }
@@ -127,7 +129,8 @@ private struct FolderCell: View {
             symbols: person.sortedDocuments.prefix(2).map(\.type.symbol),
             isFocused: isFocused,
             size: FolderFanView.folderSize,
-            openAmount: isOpen && !reduceMotion ? 1 : 0
+            openAmount: isOpen && !reduceMotion ? 1 : 0,
+            tint: person.color
         )
         .animation(
             isOpen ? .spring(response: 0.46, dampingFraction: 0.66) : .spring(response: 0.5, dampingFraction: 0.78),

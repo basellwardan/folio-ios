@@ -20,12 +20,12 @@ final class AppLock {
         case .faceID: return "Face ID"
         case .touchID: return "Touch ID"
         case .opticID: return "Optic ID"
-        default: return "Passcode"
+        default: return tr("Passcode")
         }
     }
 
     var biometrySymbol: String {
-        biometryName == "Touch ID" ? "touchid" : (biometryName == "Passcode" ? "lock.fill" : "faceid")
+        biometryName == "Touch ID" ? "touchid" : (biometryName == tr("Passcode") ? "lock.fill" : "faceid")
     }
 
     func lockIfNeeded() {
@@ -47,7 +47,7 @@ final class AppLock {
         do {
             let ok = try await context.evaluatePolicy(
                 .deviceOwnerAuthentication,
-                localizedReason: "Unlock your documents"
+                localizedReason: tr("Unlock your documents")
             )
             if ok {
                 lastError = nil

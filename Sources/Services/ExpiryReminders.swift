@@ -21,8 +21,8 @@ enum ExpiryReminders {
             var comps = cal.dateComponents([.year, .month, .day], from: day)
             comps.hour = 9
             let content = UNMutableNotificationContent()
-            content.title = days == 0 ? "\(title) expires today" : "\(title) expires in \(days) days"
-            content.body = "\(personName)'s \(title.lowercased()) needs renewing."
+            content.title = days == 0 ? tr("%@ expires today", title) : tr("%@ expires in %@", title, L10n.days(days))
+            content.body = tr("%1$@'s %2$@ needs renewing.", personName, Localizer.shared.isArabic ? title : title.lowercased())
             content.sound = .default
             let request = UNNotificationRequest(
                 identifier: "\(uid.uuidString)-\(days)",

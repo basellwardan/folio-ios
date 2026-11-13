@@ -28,7 +28,7 @@ struct DocumentDetailView: View {
                     card
                         .padding(.top, 12)
                         .padding(.horizontal, 6)
-                    Text("Tap to flip · drag to spin")
+                    Text(tr("Tap to flip · drag to spin"))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(Theme.textTertiary)
 
@@ -37,14 +37,14 @@ struct DocumentDetailView: View {
                     scans
                         .depthEntrance(index: 2, appeared: appeared)
                     if !document.notes.isEmpty {
-                        GlassSection(title: "Notes") {
+                        GlassSection(title: tr("Notes")) {
                             Text(document.notes)
                                 .font(.system(size: 15))
                                 .foregroundStyle(.white)
                         }
                         .depthEntrance(index: 3, appeared: appeared)
                     }
-                    Button("Delete document", systemImage: "trash", role: .destructive) { confirmDelete = true }
+                    Button(tr("Delete document"), systemImage: "trash", role: .destructive) { confirmDelete = true }
                         .buttonStyle(.glass)
                         .tint(Theme.badge)
                         .padding(.top, 6)
@@ -59,7 +59,7 @@ struct DocumentDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Edit", systemImage: "pencil") { showEditor = true }
+                Button(tr("Edit"), systemImage: "pencil") { showEditor = true }
             }
         }
         .sheet(isPresented: $showEditor) {
@@ -68,10 +68,10 @@ struct DocumentDetailView: View {
         .fullScreenCover(item: $viewer) { item in
             ScanViewer(imageID: item.id, title: item.title)
         }
-        .confirmationDialog("Delete this document?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Delete", role: .destructive) { deleteDocument() }
+        .confirmationDialog(tr("Delete this document?"), isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button(tr("Delete"), role: .destructive) { deleteDocument() }
         } message: {
-            Text("The scans are erased from this iPhone. This cannot be undone.")
+            Text(tr("The scans are erased from this iPhone. This cannot be undone."))
         }
         .onAppear {
             if !appeared { withAnimation { appeared = true } }
@@ -123,11 +123,11 @@ struct DocumentDetailView: View {
     // MARK: Details
 
     private var details: some View {
-        GlassSection(title: "Details") {
+        GlassSection(title: tr("Details")) {
             VStack(spacing: 14) {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
-                        label("Number")
+                        label(tr("Number"))
                         Text(document.number.isEmpty ? "—" : (revealNumber ? document.number : document.maskedNumber))
                             .font(.system(size: 18, weight: .medium, design: .monospaced))
                             .contentTransition(.numericText())
@@ -145,19 +145,19 @@ struct DocumentDetailView: View {
                     }
                 }
                 Divider().overlay(Theme.hairline)
-                row("Holder", document.person?.name ?? "—")
-                row("Type", document.type.label)
-                if !document.issuer.isEmpty { row("Issued by", document.issuer) }
-                row("Issue date", document.issueDate?.mediumFormatted ?? "—")
+                row(tr("Holder"), document.person?.name ?? "—")
+                row(tr("Type"), document.type.label)
+                if !document.issuer.isEmpty { row(tr("Issued by"), document.issuer) }
+                row(tr("Issue date"), document.issueDate?.mediumFormatted ?? "—")
                 HStack {
-                    label("Expiry date")
+                    label(tr("Expiry date"))
                     Spacer()
                     Text(document.expiryDate?.mediumFormatted ?? "—")
                         .font(.system(size: 15, weight: .medium))
                     StatusChip(status: document.status, compact: true)
                 }
                 if let days = document.daysUntilExpiry {
-                    Text(days < 0 ? "Expired \(-days) days ago" : days == 0 ? "Expires today" : "Expires in \(days) days")
+                    Text(days < 0 ? tr("Expired %@ ago", L10n.days(-days)) : days == 0 ? tr("Expires today") : tr("Expires in %@", L10n.days(days)))
                         .font(.system(size: 13))
                         .foregroundStyle(document.status.color)
                         .frame(maxWidth: .infinity, alignment: .trailing)
@@ -168,10 +168,10 @@ struct DocumentDetailView: View {
     }
 
     private var scans: some View {
-        GlassSection(title: "Scans") {
+        GlassSection(title: tr("Scans")) {
             HStack(spacing: 12) {
-                scanThumb(id: document.frontImageID, title: "Front")
-                scanThumb(id: document.backImageID, title: "Back")
+                scanThumb(id: document.frontImageID, title: tr("Front"))
+                scanThumb(id: document.backImageID, title: tr("Back"))
             }
         }
     }
@@ -278,7 +278,7 @@ struct ScanThumbnail: View {
                     VStack(spacing: 6) {
                         Image(systemName: imageID == nil ? "plus.viewfinder" : "photo")
                             .font(.system(size: 22, weight: .light))
-                        Text(imageID == nil ? "Add \(title.lowercased())" : title)
+                        Text(imageID == nil ? (title == tr("Front") ? tr("Add front") : tr("Add back")) : title)
                             .font(.system(size: 12, weight: .medium))
                     }
                     .foregroundStyle(Theme.textSecondary)

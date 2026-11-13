@@ -26,10 +26,10 @@ struct LockView: View {
                 }
                 .animation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true), value: floating)
 
-                Text("Folio is locked")
+                Text(tr("Folio is locked"))
                     .font(.system(size: 26, weight: .regular))
                     .padding(.top, 44)
-                Text("Your documents stay encrypted on this iPhone.")
+                Text(tr("Your documents stay encrypted on this iPhone."))
                     .font(.system(size: 14))
                     .foregroundStyle(Theme.textSecondary)
                     .padding(.top, 6)
@@ -43,7 +43,7 @@ struct LockView: View {
                 Button {
                     Task { await lock.unlock() }
                 } label: {
-                    Label("Unlock with \(lock.biometryName)", systemImage: lock.biometrySymbol)
+                    Label(tr("Unlock with %@", lock.biometryName), systemImage: lock.biometrySymbol)
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(.black)
                         .padding(.horizontal, 26)

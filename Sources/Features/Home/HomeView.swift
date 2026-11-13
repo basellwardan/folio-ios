@@ -23,7 +23,8 @@ struct HomeView: View {
     var body: some View {
         NavigationStack(path: $path) {
             ZStack {
-                DotGridBackground(glow: Theme.accent, glowCenter: UnitPoint(x: 0.6, y: 0.47))
+                DotGridBackground(glow: focusedPerson?.color ?? Theme.accent, glowCenter: UnitPoint(x: 0.5, y: 0.5),
+                                  glowStrength: 0.2)
 
                 ScrollView(.vertical) {
                     VStack(spacing: 0) {
@@ -98,6 +99,8 @@ struct HomeView: View {
         HStack(alignment: .center) {
             LogoMark(size: 54)
             Spacer()
+            LanguageMenu()
+                .padding(.trailing, 6)
             GlassCircleButton(systemImage: "bell", size: 50, badge: attentionCount) {
                 sheet = .expiring
             }
@@ -111,16 +114,16 @@ struct HomeView: View {
         ScrollView(.horizontal) {
             GlassEffectContainer(spacing: 12) {
                 HStack(spacing: 10) {
-                    GlassPill(title: "Scan", systemImage: "doc.viewfinder") {
+                    GlassPill(title: tr("Scan"), systemImage: "doc.viewfinder") {
                         sheet = people.isEmpty ? .addPerson : .addDocument(scan: true)
                     }
                     .matchedTransitionSource(id: "scan", in: zoom)
 
-                    GlassPill(title: "Expiring", systemImage: "clock.badge.exclamationmark") {
+                    GlassPill(title: tr("Expiring"), systemImage: "clock.badge.exclamationmark") {
                         sheet = .expiring
                     }
 
-                    GlassPill(title: "Add Document", systemImage: "plus", prominent: true) {
+                    GlassPill(title: tr("Add Document"), systemImage: "plus", prominent: true) {
                         sheet = people.isEmpty ? .addPerson : .addDocument(scan: false)
                     }
                     .matchedTransitionSource(id: "add-doc", in: zoom)
@@ -261,7 +264,7 @@ struct FocusCard: View {
                     Text(person.validPercent.map { "\($0)" } ?? "—")
                         .font(.system(size: 28, weight: .thin))
                         .contentTransition(.numericText())
-                    Text(person.validPercent == nil ? "" : "% valid")
+                    Text(person.validPercent == nil ? "" : tr("% valid"))
                         .font(.system(size: 11, weight: .light))
                         .foregroundStyle(Theme.textSecondary)
                 }
@@ -279,10 +282,33 @@ struct FocusCard: View {
     }
 
     private var subtitle: String {
-        let n = person.documents.count
-        let docs = n == 1 ? "1 document" : "\(n) documents"
+        let docs = L10n.documents(person.documents.count)
         let attention = person.attentionCount
-        return attention > 0 ? "\(docs) · \(attention) due" : docs
+        return attention > 0 ? tr("%@ · %@ due", docs, "\(attention)") : docs
+    }
+}
+
+/// Globe button: switch the app between the phone's language, English and Arabic.
+struct LanguageMenu: View {
+    var body: some View {
+        Menu {
+            Picker(tr("Language"), selection: Binding(
+                get: { Localizer.shared.language },
+                set: { new in withAnimation(.smooth(duration: 0.35)) { Localizer.shared.setLanguage(new) } }
+            )) {
+                ForEach(AppLanguage.allCases) { lang in
+                    Text(lang.menuTitle).tag(lang)
+                }
+            }
+        } label: {
+            Image(systemName: "globe")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(.white)
+                .frame(width: 50, height: 50)
+                .contentShape(Circle())
+        }
+        .glassEffect(.regular.interactive(), in: .circle)
+        .accessibilityLabel(tr("Language"))
     }
 }
 
@@ -291,13 +317,13 @@ struct EmptyFocusCard: View {
     var body: some View {
         Button(action: onAdd) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Welcome to Folio")
+                Text(tr("Welcome to Folio"))
                     .font(.system(size: 19, weight: .medium))
-                Text("Create a folder for each person, then add their IDs, passports and licenses.")
+                Text(tr("Create a folder for each person, then add their IDs, passports and licenses."))
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Label("Add a person", systemImage: "plus")
+                Label(tr("Add a person"), systemImage: "plus")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Theme.accent)
                     .padding(.top, 6)

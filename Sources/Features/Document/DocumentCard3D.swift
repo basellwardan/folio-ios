@@ -93,9 +93,9 @@ struct DocumentCard3D: View {
                 .foregroundStyle(Theme.textSecondary)
                 .padding(.top, 2)
             HStack(alignment: .bottom) {
-                field("ISSUED", document.issueDate?.shortFormatted ?? "—")
+                field(tr("ISSUED"), document.issueDate?.shortFormatted ?? "—")
                 Spacer()
-                field("EXPIRES", document.expiryDate?.shortFormatted ?? "—", alignment: .trailing)
+                field(tr("EXPIRES"), document.expiryDate?.shortFormatted ?? "—", alignment: .trailing)
             }
             .padding(.top, 12)
         }
@@ -112,7 +112,7 @@ struct DocumentCard3D: View {
                 .padding(.top, 8)
             if image == nil {
                 Spacer()
-                Text("No back side scanned")
+                Text(tr("No back side scanned"))
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Theme.textSecondary)
                 Spacer()
@@ -130,7 +130,7 @@ struct DocumentCard3D: View {
 
     private var mrzLine: String {
         let num = document.number.uppercased().filter { $0.isLetter || $0.isNumber }
-        let base = "\(document.type.shortLabel.uppercased())<<\(num)<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+        let base = "\(document.type.englishShortLabel.uppercased())<<\(num)<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         return String(base.prefix(30)) + "\n" + String(repeating: "<", count: 30)
     }
 

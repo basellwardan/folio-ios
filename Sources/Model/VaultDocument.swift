@@ -52,7 +52,7 @@ extension VaultDocument {
 
     /// "•••• 4821" style masking.
     var maskedNumber: String {
-        guard !number.isEmpty else { return "No number" }
+        guard !number.isEmpty else { return tr("No number") }
         let tail = String(number.suffix(4))
         return number.count <= 4 ? number : "•••• \(tail)"
     }

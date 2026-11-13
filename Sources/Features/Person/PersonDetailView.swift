@@ -55,15 +55,15 @@ struct PersonDetailView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Button("Edit person", systemImage: "pencil") { showEditPerson = true }
-                    Button("Delete person", systemImage: "trash", role: .destructive) { confirmDelete = true }
+                    Button(tr("Edit person"), systemImage: "pencil") { showEditPerson = true }
+                    Button(tr("Delete person"), systemImage: "trash", role: .destructive) { confirmDelete = true }
                 } label: {
                     Image(systemName: "ellipsis")
                 }
             }
             ToolbarSpacer(.fixed, placement: .topBarTrailing)
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Add document", systemImage: "plus") { showAddDocument = true }
+                Button(tr("Add document"), systemImage: "plus") { showAddDocument = true }
                     .buttonStyle(.glassProminent)
                     .tint(Theme.accent)
             }
@@ -74,10 +74,10 @@ struct PersonDetailView: View {
         .sheet(isPresented: $showEditPerson) {
             PersonEditorView(person: person, onSaved: nil)
         }
-        .confirmationDialog("Delete \(person.name)?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Delete person and \(person.documents.count) documents", role: .destructive) { deletePerson() }
+        .confirmationDialog(tr("Delete %@?", person.name), isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button(tr("Delete person and %@", L10n.documents(person.documents.count)), role: .destructive) { deletePerson() }
         } message: {
-            Text("Their scans are erased from this iPhone. This cannot be undone.")
+            Text(tr("Their scans are erased from this iPhone. This cannot be undone."))
         }
         .onAppear {
             if !appeared {
@@ -101,7 +101,7 @@ struct PersonDetailView: View {
                     .font(.system(size: 28, weight: .regular))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                Text("Folder since \(person.createdAt.mediumFormatted)")
+                Text(tr("Folder since %@", person.createdAt.mediumFormatted))
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.textSecondary)
             }
@@ -117,10 +117,10 @@ struct PersonDetailView: View {
         let expired = docs.filter { $0.status == .expired }.count
         return GlassEffectContainer(spacing: 10) {
             HStack(spacing: 10) {
-                stat("\(docs.count)", "Documents", .white)
-                stat("\(valid)", "Valid", Theme.accent)
-                stat("\(soon)", "Expiring", Theme.warn)
-                stat("\(expired)", "Expired", Theme.badge)
+                stat("\(docs.count)", tr("Documents"), .white)
+                stat("\(valid)", tr("Valid"), Theme.accent)
+                stat("\(soon)", tr("Expiring"), Theme.warn)
+                stat("\(expired)", tr("Expired"), Theme.badge)
             }
         }
     }
@@ -147,13 +147,13 @@ struct PersonDetailView: View {
             Image(systemName: "doc.badge.plus")
                 .font(.system(size: 34, weight: .light))
                 .foregroundStyle(Theme.accent)
-            Text("This folder is empty")
+            Text(tr("This folder is empty"))
                 .font(.system(size: 18, weight: .medium))
-            Text("Scan or import \(person.firstName)'s ID, passport or license.")
+            Text(tr("Scan or import %@'s ID, passport or license.", person.firstName))
                 .font(.system(size: 14))
                 .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
-            Button("Add first document", systemImage: "plus") { showAddDocument = true }
+            Button(tr("Add first document"), systemImage: "plus") { showAddDocument = true }
                 .buttonStyle(.glassProminent)
                 .tint(Theme.accent)
                 .foregroundStyle(.black)

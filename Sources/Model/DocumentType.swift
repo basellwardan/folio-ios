@@ -13,7 +13,9 @@ enum DocumentType: String, CaseIterable, Identifiable, Codable {
 
     var id: String { rawValue }
 
-    var label: String {
+    var label: String { tr(englishLabel) }
+
+    var englishLabel: String {
         switch self {
         case .nationalID: "National ID"
         case .passport: "Passport"
@@ -26,7 +28,10 @@ enum DocumentType: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var shortLabel: String {
+    var shortLabel: String { tr(englishShortLabel) }
+
+    /// Untranslated; also used for the machine-readable line printed on the card back.
+    var englishShortLabel: String {
         switch self {
         case .nationalID: "ID"
         case .passport: "Passport"
@@ -94,7 +99,9 @@ enum ExpiryStatus: Equatable {
         return .valid
     }
 
-    var label: String {
+    var label: String { tr(englishLabel) }
+
+    var englishLabel: String {
         switch self {
         case .valid: "Valid"
         case .expiringSoon: "Expiring"

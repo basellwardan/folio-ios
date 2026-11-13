@@ -75,3 +75,28 @@ final class TextExtractorTests: XCTestCase {
         XCTAssertEqual(dates.map { ymd($0) }, [[2030, 1, 12]])
     }
 }
+
+final class LocalizationTests: XCTestCase {
+    /// Every Arabic translation must use the same placeholders as its English key,
+    /// otherwise String(format:) would crash or drop values.
+    func testArabicPlaceholdersMatch() {
+        let pattern = try! NSRegularExpression(pattern: "%(\d\$)?@")
+        func count(_ s: String) -> Int {
+            pattern.numberOfMatches(in: s, range: NSRange(s.startIndex..., in: s))
+        }
+        for (english, arabic) in L10n.arabic {
+            XCTAssertFalse(arabic.isEmpty, english)
+            XCTAssertEqual(count(english), count(arabic), "placeholder mismatch for \"\(english)\"")
+        }
+    }
+
+    func testEveryDocumentTypeIsTranslated() {
+        for type in DocumentType.allCases {
+            XCTAssertNotNil(L10n.arabic[type.englishLabel], type.englishLabel)
+            XCTAssertNotNil(L10n.arabic[type.englishShortLabel], type.englishShortLabel)
+        }
+        for status in [ExpiryStatus.valid, .expiringSoon, .expired, .noExpiry] {
+            XCTAssertNotNil(L10n.arabic[status.englishLabel], status.englishLabel)
+        }
+    }
+}

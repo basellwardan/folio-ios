@@ -22,9 +22,9 @@ struct ExpiringListView: View {
                             Image(systemName: "checkmark.seal.fill")
                                 .font(.system(size: 40))
                                 .foregroundStyle(Theme.accent)
-                            Text("Everything is up to date")
+                            Text(tr("Everything is up to date"))
                                 .font(.system(size: 18, weight: .medium))
-                            Text("Nothing expires in the next 90 days.")
+                            Text(tr("Nothing expires in the next 90 days."))
                                 .font(.system(size: 14))
                                 .foregroundStyle(Theme.textSecondary)
                         }
@@ -40,7 +40,7 @@ struct ExpiringListView: View {
                 .padding(.top, 8)
                 .foregroundStyle(.white)
             }
-            .navigationTitle("Needs attention")
+            .navigationTitle(tr("Needs attention"))
             .navigationBarTitleDisplayMode(.inline)
         }
         .onAppear { withAnimation { appeared = true } }
@@ -64,7 +64,7 @@ struct ExpiringListView: View {
             VStack(alignment: .trailing, spacing: 4) {
                 StatusChip(status: doc.status, compact: true)
                 if let days = doc.daysUntilExpiry {
-                    Text(days < 0 ? "\(-days)d ago" : "in \(days)d")
+                    Text(days < 0 ? tr("%@ ago", L10n.days(-days)) : tr("in %@", L10n.days(days)))
                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundStyle(doc.status.color)
                 }

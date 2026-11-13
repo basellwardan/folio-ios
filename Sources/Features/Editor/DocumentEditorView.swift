@@ -46,7 +46,7 @@ struct DocumentEditorView: View {
                         .listRowBackground(Color.clear)
                 }
 
-                Section("Scans") {
+                Section(tr("Scans")) {
                     HStack(spacing: 12) {
                         imageSlot(side: .front, image: frontImage)
                         imageSlot(side: .back, image: backImage)
@@ -55,45 +55,45 @@ struct DocumentEditorView: View {
                     if isReading {
                         HStack(spacing: 10) {
                             ProgressView()
-                            Text("Reading text on device…").foregroundStyle(Theme.textSecondary)
+                            Text(tr("Reading text on device…")).foregroundStyle(Theme.textSecondary)
                         }
                     }
                     if let s = suggestions, !s.isEmpty { suggestionRow(s) }
                 }
 
-                Section("Owner") {
-                    Picker("Person", selection: $personID) {
+                Section(tr("Owner")) {
+                    Picker(tr("Person"), selection: $personID) {
                         ForEach(people) { p in
                             Text(p.name).tag(Optional(p.uid))
                         }
                     }
                 }
 
-                Section("Details") {
-                    TextField("Title (optional)", text: $title, prompt: Text(type.label))
-                    TextField("Document number", text: $number)
+                Section(tr("Details")) {
+                    TextField(tr("Title (optional)"), text: $title, prompt: Text(type.label))
+                    TextField(tr("Document number"), text: $number)
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
                         .font(.system(.body, design: .monospaced))
-                    TextField("Issued by", text: $issuer)
+                    TextField(tr("Issued by"), text: $issuer)
                 }
 
-                Section("Dates") {
-                    Toggle("Issue date", isOn: $hasIssueDate.animation(Motion.snappy))
+                Section(tr("Dates")) {
+                    Toggle(tr("Issue date"), isOn: $hasIssueDate.animation(Motion.snappy))
                     if hasIssueDate {
-                        DatePicker("Issued", selection: $issueDate, displayedComponents: .date)
+                        DatePicker(tr("Issued"), selection: $issueDate, displayedComponents: .date)
                     }
-                    Toggle("Expires", isOn: $hasExpiry.animation(Motion.snappy))
+                    Toggle(tr("Expires"), isOn: $hasExpiry.animation(Motion.snappy))
                     if hasExpiry {
-                        DatePicker("Expiry", selection: $expiryDate, displayedComponents: .date)
-                        Text("You'll get reminders 90, 30 and 7 days before.")
+                        DatePicker(tr("Expiry"), selection: $expiryDate, displayedComponents: .date)
+                        Text(tr("You'll get reminders 90, 30 and 7 days before."))
                             .font(.footnote)
                             .foregroundStyle(Theme.textSecondary)
                     }
                 }
 
-                Section("Notes") {
-                    TextField("Anything else", text: $notes, axis: .vertical)
+                Section(tr("Notes")) {
+                    TextField(tr("Anything else"), text: $notes, axis: .vertical)
                         .lineLimit(2...6)
                 }
 
@@ -103,14 +103,14 @@ struct DocumentEditorView: View {
             }
             .scrollContentBackground(.hidden)
             .background(DotGridBackground(glow: type.tint, glowCenter: UnitPoint(x: 0.5, y: 0.1), glowStrength: 0.16))
-            .navigationTitle(document == nil ? "New document" : "Edit document")
+            .navigationTitle(document == nil ? tr("New document") : tr("Edit document"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", systemImage: "xmark") { dismiss() }
+                    Button(tr("Cancel"), systemImage: "xmark") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", systemImage: "checkmark") { save() }
+                    Button(tr("Save"), systemImage: "checkmark") { save() }
                         .disabled(personID == nil || saving)
                 }
             }
@@ -169,12 +169,12 @@ struct DocumentEditorView: View {
                 if let image {
                     Image(uiImage: image).resizable().scaledToFill()
                 } else if existingID != nil {
-                    ScanThumbnail(imageID: existingID, title: side == .front ? "Front" : "Back")
+                    ScanThumbnail(imageID: existingID, title: side == .front ? tr("Front") : tr("Back"))
                 } else {
                     VStack(spacing: 4) {
                         Image(systemName: "viewfinder")
                             .font(.system(size: 22, weight: .light))
-                        Text(side == .front ? "Front" : "Back")
+                        Text(side == .front ? tr("Front") : tr("Back"))
                             .font(.system(size: 12, weight: .medium))
                     }
                     .foregroundStyle(Theme.textSecondary)
@@ -217,19 +217,19 @@ struct DocumentEditorView: View {
 
     private func suggestionRow(_ s: TextExtractor.Suggestions) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Found on the scan", systemImage: "text.viewfinder")
+            Label(tr("Found on the scan"), systemImage: "text.viewfinder")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(Theme.accent)
             ScrollView(.horizontal) {
                 HStack(spacing: 8) {
                     if let n = s.number, n != number {
-                        suggestionChip("No. \(n)") { number = n }
+                        suggestionChip(tr("No. %@", n)) { number = n }
                     }
                     if let e = s.expiry {
-                        suggestionChip("Expires \(e.mediumFormatted)") { hasExpiry = true; expiryDate = e }
+                        suggestionChip(tr("Expires %@", e.mediumFormatted)) { hasExpiry = true; expiryDate = e }
                     }
                     if let i = s.issue {
-                        suggestionChip("Issued \(i.mediumFormatted)") { hasIssueDate = true; issueDate = i }
+                        suggestionChip(tr("Issued %@", i.mediumFormatted)) { hasIssueDate = true; issueDate = i }
                     }
                 }
             }
@@ -287,7 +287,7 @@ struct DocumentEditorView: View {
         defer { pickerItem = nil }
         guard let data = try? await item.loadTransferable(type: Data.self),
               let image = UIImage(data: data) else {
-            errorMessage = "That photo could not be opened."
+            errorMessage = tr("That photo could not be opened.")
             return
         }
         if pickerSide == .front {

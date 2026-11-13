@@ -41,8 +41,12 @@ extension Color {
 }
 
 extension Date {
-    var shortFormatted: String { formatted(.dateTime.day(.twoDigits).month(.twoDigits).year()) }
-    var mediumFormatted: String { formatted(.dateTime.day().month(.abbreviated).year()) }
+    var shortFormatted: String {
+        formatted(.dateTime.day(.twoDigits).month(.twoDigits).year().locale(Localizer.shared.locale))
+    }
+    var mediumFormatted: String {
+        formatted(.dateTime.day().month(.abbreviated).year().locale(Localizer.shared.locale))
+    }
 }
 
 /// Button style that adds a quick, springy press-down; used with glass and 3D objects.

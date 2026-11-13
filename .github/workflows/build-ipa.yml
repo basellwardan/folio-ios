@@ -107,9 +107,13 @@ jobs:
           APP=build/sim/Build/Products/Debug-iphonesimulator/Folio.app
           xcrun simctl install "$UDID" "$APP"
           mkdir -p shots
-          for s in home fan open person document flipped expiring add; do
+          for s in home fan open person document flipped expiring add ar-home ar-person ar-document; do
             xcrun simctl terminate "$UDID" app.folio.vault || true
-            xcrun simctl launch "$UDID" app.folio.vault -demoData YES -screen "$s"
+            if [[ "$s" == ar-* ]]; then
+              xcrun simctl launch "$UDID" app.folio.vault -demoData YES -screen "${s#ar-}" -appLanguage arabic
+            else
+              xcrun simctl launch "$UDID" app.folio.vault -demoData YES -screen "$s" -appLanguage english
+            fi
             sleep 7
             xcrun simctl io "$UDID" screenshot "shots/$s.png"
           done
