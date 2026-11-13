@@ -11,7 +11,7 @@ struct FolderFanView: View {
     var onAdd: () -> Void
 
     static let addID = UUID(uuidString: "00000000-0000-0000-0000-0000000000AD")!
-    static let folderSize = CGSize(width: 150, height: 200)
+    static let folderSize = CGSize(width: 160, height: 214)
 
     @State private var viewportWidth: CGFloat = 390
     @State private var appeared = false
@@ -24,7 +24,7 @@ struct FolderFanView: View {
 
     var body: some View {
         ScrollView(.horizontal) {
-            LazyHStack(spacing: -38) {
+            LazyHStack(spacing: -46) {
                 ForEach(Array(people.enumerated()), id: \.element.uid) { index, person in
                     FolderCell(
                         person: person,
@@ -159,10 +159,11 @@ private extension View {
     /// Rotates, scales and lowers each item by its distance from the viewport center.
     func coverFlow(reduceMotion: Bool) -> some View {
         visualEffect { content, proxy in
-            let frame = proxy.frame(in: .scrollView(axis: .horizontal))
-            let viewport = proxy.bounds(of: .scrollView(axis: .horizontal)) ?? .zero
+            // `bounds(of:)` is the scroll viewport expressed in this item's own coordinates.
+            let viewport = proxy.bounds(of: .scrollView(axis: .horizontal))
+                ?? CGRect(origin: .zero, size: proxy.size)
             let half = max(viewport.width / 2, 1)
-            let distance = (frame.midX - viewport.midX) / half          // 0 = centered, ±1 = at the edge
+            let distance = (proxy.size.width / 2 - viewport.midX) / half  // 0 = centered, ±1 = at the edge
             let d = max(-1.8, min(1.8, distance))
             let magnitude = min(abs(d), 1.4)
             return content

@@ -24,7 +24,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Show Xcode
         run: |
@@ -57,7 +57,7 @@ jobs:
           cd dist && zip -qry Folio.ipa Payload && rm -rf Payload
           ls -lh Folio.ipa
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: Folio-ipa
           path: dist/Folio.ipa
@@ -115,7 +115,7 @@ jobs:
           done
           ls -lh shots
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: always() && steps.sim.outputs.udid != ''
         with:
           name: screenshots

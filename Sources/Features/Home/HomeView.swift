@@ -10,7 +10,6 @@ struct HomeView: View {
     @State private var focusedID: UUID?
     @State private var sheet: HomeSheet?
     @Namespace private var zoom
-    @Namespace private var glass
 
     private var focusedPerson: Person? {
         people.first { $0.uid == focusedID } ?? (focusedID == FolderFanView.addID ? nil : people.first)
@@ -88,8 +87,8 @@ struct HomeView: View {
         HStack(alignment: .center) {
             LogoMark(size: 54)
             Spacer()
-            GlassEffectContainer(spacing: 18) {
-                HStack(spacing: -12) {
+            GlassEffectContainer(spacing: 0) {
+                HStack(spacing: -8) {
                     ForEach(people.prefix(3)) { person in
                         Button {
                             withAnimation(Motion.snappy) { focusedID = person.uid }
@@ -100,11 +99,11 @@ struct HomeView: View {
                         .buttonStyle(PressScaleStyle(scale: 0.9))
                         .glassEffect(
                             Glass.regular
-                                .tint(focusedID == person.uid ? Theme.accent : person.color.opacity(0.18))
+                                .tint(focusedID == person.uid ? Theme.accent : Color.white.opacity(0.06))
                                 .interactive(),
                             in: .circle
                         )
-                        .glassEffectUnion(id: "people", namespace: glass)
+                        .overlay(Circle().stroke(Color.white.opacity(0.14), lineWidth: 0.8).allowsHitTesting(false))
                     }
                 }
                 .animation(Motion.snappy, value: focusedID)
@@ -137,7 +136,7 @@ struct HomeView: View {
                     }
                     .matchedTransitionSource(id: "add-doc", in: zoom)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 16)
                 .padding(.vertical, 6)
             }
         }
@@ -156,7 +155,7 @@ struct HomeView: View {
                 onOpen: { path.append($0) },
                 onAdd: { sheet = .addPerson }
             )
-            .padding(.top, 64)
+            .padding(.top, 84)
 
             if let person = focusedPerson {
                 FocusCard(person: person) { path.append(person) }

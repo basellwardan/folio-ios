@@ -32,7 +32,7 @@ struct GlassPill: View {
                     .font(.system(size: 15, weight: .medium))
             }
             .foregroundStyle(prominent ? Color.black : Color.white)
-            .padding(.horizontal, 18)
+            .padding(.horizontal, 15)
             .frame(height: 46)
             .contentShape(Capsule())
         }
